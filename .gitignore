@@ -4,3 +4,7 @@
 .idea/modules.xml
 .idea/vcs.xml
 jdk8.iml
+.idea/compiler.xml
+.idea/libraries/
+.idea/uiDesigner.xml
+out/
