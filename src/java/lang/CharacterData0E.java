@@ -1,4 +1,4 @@
-// This file was generated AUTOMATICALLY from a template file Wed Mar 11 23:23:28 PDT 2020
+// This file was generated AUTOMATICALLY from a template file Thu Mar 12 06:35:09 UTC 2020
 /*
  * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
  * ORACLE PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
@@ -241,7 +241,7 @@ class CharacterData0E extends CharacterData {
     private CharacterData0E() {};
 
     // The following tables and code generated using:
-  // java GenerateCharacter -plane 14 -template /scratch/jenkins/workspace/8-2-build-linux-amd64/jdk8u251/737/jdk/make/data/characterdata/CharacterData0E.java.template -spec /scratch/jenkins/workspace/8-2-build-linux-amd64/jdk8u251/737/jdk/make/data/unicodedata/UnicodeData.txt -specialcasing /scratch/jenkins/workspace/8-2-build-linux-amd64/jdk8u251/737/jdk/make/data/unicodedata/SpecialCasing.txt -proplist /scratch/jenkins/workspace/8-2-build-linux-amd64/jdk8u251/737/jdk/make/data/unicodedata/PropList.txt -o /scratch/jenkins/workspace/8-2-build-linux-amd64/jdk8u251/737/build/linux-amd64/jdk/gensrc/java/lang/CharacterData0E.java -string -usecharforbyte 11 4 1
+  // java GenerateCharacter -plane 14 -template c:/jenkins/workspace/8-2-build-windows-amd64-cygwin/jdk8u251/737/jdk/make/data/characterdata/CharacterData0E.java.template -spec c:/jenkins/workspace/8-2-build-windows-amd64-cygwin/jdk8u251/737/jdk/make/data/unicodedata/UnicodeData.txt -specialcasing c:/jenkins/workspace/8-2-build-windows-amd64-cygwin/jdk8u251/737/jdk/make/data/unicodedata/SpecialCasing.txt -proplist c:/jenkins/workspace/8-2-build-windows-amd64-cygwin/jdk8u251/737/jdk/make/data/unicodedata/PropList.txt -o c:/jenkins/workspace/8-2-build-windows-amd64-cygwin/jdk8u251/737/build/windows-amd64/jdk/gensrc/java/lang/CharacterData0E.java -string -usecharforbyte 11 4 1
   // The X table has 2048 entries for a total of 4096 bytes.
 
   static final char X[] = (

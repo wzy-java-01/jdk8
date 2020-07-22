@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2013, Oracle and/or its affiliates. All rights reserved.
  * ORACLE PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
  *
  *
@@ -24,98 +24,322 @@
  */
 package java.net;
 
-import java.io.IOException;
-import java.io.FileDescriptor;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Collections;
-import jdk.net.*;
-
-import static sun.net.ExtendedOptionsImpl.*;
+import java.io.*;
+import java.security.PrivilegedAction;
 
 /*
- * On Unix systems we simply delegate to native methods.
+ * This class PlainSocketImpl simply delegates to the appropriate real
+ * SocketImpl. We do this because PlainSocketImpl is already extended
+ * by SocksSocketImpl.
+ * <p>
+ * There are two possibilities for the real SocketImpl,
+ * TwoStacksPlainSocketImpl or DualStackPlainSocketImpl. We use
+ * DualStackPlainSocketImpl on systems that have a dual stack
+ * TCP implementation. Otherwise we create an instance of
+ * TwoStacksPlainSocketImpl and delegate to it.
  *
  * @author Chris Hegarty
  */
 
 class PlainSocketImpl extends AbstractPlainSocketImpl
 {
+    private AbstractPlainSocketImpl impl;
+
+    /* the windows version. */
+    private static float version;
+
+    /* java.net.preferIPv4Stack */
+    private static boolean preferIPv4Stack = false;
+
+    /* If the version supports a dual stack TCP implementation */
+    private static boolean useDualStackImpl = false;
+
+    /* sun.net.useExclusiveBind */
+    private static String exclBindProp;
+
+    /* True if exclusive binding is on for Windows */
+    private static boolean exclusiveBind = true;
+
     static {
-        initProto();
+        java.security.AccessController.doPrivileged( new PrivilegedAction<Object>() {
+                public Object run() {
+                    version = 0;
+                    try {
+                        version = Float.parseFloat(System.getProperties().getProperty("os.version"));
+                        preferIPv4Stack = Boolean.parseBoolean(
+                                          System.getProperties().getProperty("java.net.preferIPv4Stack"));
+                        exclBindProp = System.getProperty("sun.net.useExclusiveBind");
+                    } catch (NumberFormatException e ) {
+                        assert false : e;
+                    }
+                    return null; // nothing to return
+                } });
+
+        // (version >= 6.0) implies Vista or greater.
+        if (version >= 6.0 && !preferIPv4Stack) {
+                useDualStackImpl = true;
+        }
+
+        if (exclBindProp != null) {
+            // sun.net.useExclusiveBind is true
+            exclusiveBind = exclBindProp.length() == 0 ? true
+                    : Boolean.parseBoolean(exclBindProp);
+        } else if (version < 6.0) {
+            exclusiveBind = false;
+        }
     }
 
     /**
      * Constructs an empty instance.
      */
-    PlainSocketImpl() { }
+    PlainSocketImpl() {
+        if (useDualStackImpl) {
+            impl = new DualStackPlainSocketImpl(exclusiveBind);
+        } else {
+            impl = new TwoStacksPlainSocketImpl(exclusiveBind);
+        }
+    }
 
     /**
      * Constructs an instance with the given file descriptor.
      */
     PlainSocketImpl(FileDescriptor fd) {
-        this.fd = fd;
-    }
-
-    protected <T> void setOption(SocketOption<T> name, T value) throws IOException {
-        if (!name.equals(ExtendedSocketOptions.SO_FLOW_SLA)) {
-            super.setOption(name, value);
+        if (useDualStackImpl) {
+            impl = new DualStackPlainSocketImpl(fd, exclusiveBind);
         } else {
-            if (isClosedOrPending()) {
-                throw new SocketException("Socket closed");
-            }
-            checkSetOptionPermission(name);
-            checkValueType(value, SocketFlow.class);
-            setFlowOption(getFileDescriptor(), (SocketFlow)value);
+            impl = new TwoStacksPlainSocketImpl(fd, exclusiveBind);
         }
     }
 
-    protected <T> T getOption(SocketOption<T> name) throws IOException {
-        if (!name.equals(ExtendedSocketOptions.SO_FLOW_SLA)) {
-            return super.getOption(name);
-        }
-        if (isClosedOrPending()) {
-            throw new SocketException("Socket closed");
-        }
-        checkGetOptionPermission(name);
-        SocketFlow flow = SocketFlow.create();
-        getFlowOption(getFileDescriptor(), flow);
-        return (T)flow;
+    // Override methods in SocketImpl that access impl's fields.
+
+    protected FileDescriptor getFileDescriptor() {
+        return impl.getFileDescriptor();
     }
 
-    protected void socketSetOption(int opt, boolean b, Object val) throws SocketException {
+    protected InetAddress getInetAddress() {
+        return impl.getInetAddress();
+    }
+
+    protected int getPort() {
+        return impl.getPort();
+    }
+
+    protected int getLocalPort() {
+        return impl.getLocalPort();
+    }
+
+    void setSocket(Socket soc) {
+        impl.setSocket(soc);
+    }
+
+    Socket getSocket() {
+        return impl.getSocket();
+    }
+
+    void setServerSocket(ServerSocket soc) {
+        impl.setServerSocket(soc);
+    }
+
+    ServerSocket getServerSocket() {
+        return impl.getServerSocket();
+    }
+
+    public String toString() {
+        return impl.toString();
+    }
+
+    // Override methods in AbstractPlainSocketImpl that access impl's fields.
+
+    protected synchronized void create(boolean stream) throws IOException {
+        impl.create(stream);
+
+        // set fd to delegate's fd to be compatible with older releases
+        this.fd = impl.fd;
+    }
+
+    protected void connect(String host, int port)
+        throws UnknownHostException, IOException
+    {
+        impl.connect(host, port);
+    }
+
+    protected void connect(InetAddress address, int port) throws IOException {
+        impl.connect(address, port);
+    }
+
+    protected void connect(SocketAddress address, int timeout) throws IOException {
+        impl.connect(address, timeout);
+    }
+
+    public void setOption(int opt, Object val) throws SocketException {
+        impl.setOption(opt, val);
+    }
+
+    public Object getOption(int opt) throws SocketException {
+        return impl.getOption(opt);
+    }
+
+    synchronized void doConnect(InetAddress address, int port, int timeout) throws IOException {
+        impl.doConnect(address, port, timeout);
+    }
+
+    protected synchronized void bind(InetAddress address, int lport)
+        throws IOException
+    {
+        impl.bind(address, lport);
+    }
+
+    protected synchronized void accept(SocketImpl s) throws IOException {
+        if (s instanceof PlainSocketImpl) {
+            // pass in the real impl not the wrapper.
+            SocketImpl delegate = ((PlainSocketImpl)s).impl;
+            delegate.address = new InetAddress();
+            delegate.fd = new FileDescriptor();
+            impl.accept(delegate);
+            // set fd to delegate's fd to be compatible with older releases
+            s.fd = delegate.fd;
+        } else {
+            impl.accept(s);
+        }
+    }
+
+    void setFileDescriptor(FileDescriptor fd) {
+        impl.setFileDescriptor(fd);
+    }
+
+    void setAddress(InetAddress address) {
+        impl.setAddress(address);
+    }
+
+    void setPort(int port) {
+        impl.setPort(port);
+    }
+
+    void setLocalPort(int localPort) {
+        impl.setLocalPort(localPort);
+    }
+
+    protected synchronized InputStream getInputStream() throws IOException {
+        return impl.getInputStream();
+    }
+
+    void setInputStream(SocketInputStream in) {
+        impl.setInputStream(in);
+    }
+
+    protected synchronized OutputStream getOutputStream() throws IOException {
+        return impl.getOutputStream();
+    }
+
+    protected void close() throws IOException {
         try {
-            socketSetOption0(opt, b, val);
-        } catch (SocketException se) {
-            if (socket == null || !socket.isConnected())
-                throw se;
+            impl.close();
+        } finally {
+            // set fd to delegate's fd to be compatible with older releases
+            this.fd = null;
         }
     }
 
-    native void socketCreate(boolean isServer) throws IOException;
+    void reset() throws IOException {
+        try {
+            impl.reset();
+        } finally {
+            // set fd to delegate's fd to be compatible with older releases
+            this.fd = null;
+        }
+    }
 
-    native void socketConnect(InetAddress address, int port, int timeout)
-        throws IOException;
+    protected void shutdownInput() throws IOException {
+        impl.shutdownInput();
+    }
 
-    native void socketBind(InetAddress address, int port)
-        throws IOException;
+    protected void shutdownOutput() throws IOException {
+        impl.shutdownOutput();
+    }
 
-    native void socketListen(int count) throws IOException;
+    protected void sendUrgentData(int data) throws IOException {
+        impl.sendUrgentData(data);
+    }
 
-    native void socketAccept(SocketImpl s) throws IOException;
+    FileDescriptor acquireFD() {
+        return impl.acquireFD();
+    }
 
-    native int socketAvailable() throws IOException;
+    void releaseFD() {
+        impl.releaseFD();
+    }
 
-    native void socketClose0(boolean useDeferredClose) throws IOException;
+    public boolean isConnectionReset() {
+        return impl.isConnectionReset();
+    }
 
-    native void socketShutdown(int howto) throws IOException;
+    public boolean isConnectionResetPending() {
+        return impl.isConnectionResetPending();
+    }
 
-    static native void initProto();
+    public void setConnectionReset() {
+        impl.setConnectionReset();
+    }
 
-    native void socketSetOption0(int cmd, boolean on, Object value)
-        throws SocketException;
+    public void setConnectionResetPending() {
+        impl.setConnectionResetPending();
+    }
 
-    native int socketGetOption(int opt, Object iaContainerObj) throws SocketException;
+    public boolean isClosedOrPending() {
+        return impl.isClosedOrPending();
+    }
 
-    native void socketSendUrgentData(int data) throws IOException;
+    public int getTimeout() {
+        return impl.getTimeout();
+    }
+
+    // Override methods in AbstractPlainSocketImpl that need to be implemented.
+
+    void socketCreate(boolean isServer) throws IOException {
+        impl.socketCreate(isServer);
+    }
+
+    void socketConnect(InetAddress address, int port, int timeout)
+        throws IOException {
+        impl.socketConnect(address, port, timeout);
+    }
+
+    void socketBind(InetAddress address, int port)
+        throws IOException {
+        impl.socketBind(address, port);
+    }
+
+    void socketListen(int count) throws IOException {
+        impl.socketListen(count);
+    }
+
+    void socketAccept(SocketImpl s) throws IOException {
+        impl.socketAccept(s);
+    }
+
+    int socketAvailable() throws IOException {
+        return impl.socketAvailable();
+    }
+
+    void socketClose0(boolean useDeferredClose) throws IOException {
+        impl.socketClose0(useDeferredClose);
+    }
+
+    void socketShutdown(int howto) throws IOException {
+        impl.socketShutdown(howto);
+    }
+
+    void socketSetOption(int cmd, boolean on, Object value)
+        throws SocketException {
+        impl.socketSetOption(cmd, on, value);
+    }
+
+    int socketGetOption(int opt, Object iaContainerObj) throws SocketException {
+        return impl.socketGetOption(opt, iaContainerObj);
+    }
+
+    void socketSendUrgentData(int data) throws IOException {
+        impl.socketSendUrgentData(data);
+    }
 }
