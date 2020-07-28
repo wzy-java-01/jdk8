@@ -33,6 +33,10 @@ import java.util.function.Supplier;
  * null}-tolerant methods for computing the hash code of an object,
  * returning a string for an object, and comparing two objects.
  *
+ *
+ * 此类包含用于对象操作的{@code static}实用程序方法。 这些实用程序包括{@code null}安全
+ * 或{@code null}容忍的方法，用于计算对象的哈希码，
+ * 返回对象的字符串以及比较两个对象。
  * @since 1.7
  */
 public final class Objects {

@@ -2407,6 +2407,7 @@ public final class Class<T> implements java.io.Serializable,
 
     /**
      * Atomic operations support.
+     * 原子
      */
     private static class Atomic {
         // initialize Unsafe machinery here, since we need to call Class.class instance method
@@ -2455,6 +2456,8 @@ public final class Class<T> implements java.io.Serializable,
 
     /**
      * Reflection support.
+     * 反射
+     *
      */
 
     // Caches for certain reflective results

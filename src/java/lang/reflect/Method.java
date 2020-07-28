@@ -479,7 +479,9 @@ public final class Method extends Executable {
      *              and the method is an instance method.
      * @exception ExceptionInInitializerError if the initialization
      * provoked by this method fails.
+     * 方法执行
      */
+    // 解决漏洞
     @CallerSensitive
     public Object invoke(Object obj, Object... args)
         throws IllegalAccessException, IllegalArgumentException,

@@ -1114,6 +1114,8 @@ class Field extends AccessibleObject implements Member {
     /**
      * @throws NullPointerException {@inheritDoc}
      * @since 1.5
+     *
+     * 关系映射 有用到
      */
     public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
         Objects.requireNonNull(annotationClass);

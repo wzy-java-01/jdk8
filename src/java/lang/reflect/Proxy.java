@@ -698,6 +698,8 @@ public class Proxy implements java.io.Serializable {
      *          argument or any of its elements are {@code null}, or
      *          if the invocation handler, {@code h}, is
      *          {@code null}
+     *
+     *          新建代理实例
      */
     @CallerSensitive
     public static Object newProxyInstance(ClassLoader loader,

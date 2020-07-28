@@ -162,7 +162,13 @@ public final class String
      * @param  value
      *         The initial value of the string
      */
-    public String(char value[]) {
+    /**
+     * 修改参数为建议的写法
+     * @param value
+     *
+     * by wzy
+     */
+    public String(char[] value) {
         this.value = Arrays.copyOf(value, value.length);
     }
 
@@ -187,7 +193,7 @@ public final class String
      *          If the {@code offset} and {@code count} arguments index
      *          characters outside the bounds of the {@code value} array
      */
-    public String(char value[], int offset, int count) {
+    public String(char[] value, int offset, int count) {
         if (offset < 0) {
             throw new StringIndexOutOfBoundsException(offset);
         }

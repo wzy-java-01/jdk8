@@ -56,6 +56,7 @@ import java.lang.annotation.Annotation;
  */
 public class AccessibleObject implements AnnotatedElement {
 
+
     /**
      * The Permission object that is used to check whether a client
      * has sufficient privilege to defeat Java language access

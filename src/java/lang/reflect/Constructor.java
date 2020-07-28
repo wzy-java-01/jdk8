@@ -401,6 +401,9 @@ public final class Constructor<T> extends Executable {
      *              throws an exception.
      * @exception ExceptionInInitializerError if the initialization provoked
      *              by this method fails.
+     *
+     *
+     *              实例化一个对象
      */
     @CallerSensitive
     public T newInstance(Object ... initargs)

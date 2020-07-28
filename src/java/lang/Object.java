@@ -152,7 +152,7 @@ public class Object {
     /**
      * Creates and returns a copy of this object.  The precise meaning
      * of "copy" may depend on the class of the object. The general
-     * intent is that, for any object {@code x}, the expression:
+     * intent is that, for any object {@code x}, the expression:I
      * <blockquote>
      * <pre>
      * x.clone() != x</pre></blockquote>
